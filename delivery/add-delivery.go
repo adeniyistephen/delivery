@@ -22,7 +22,7 @@ func NewCore(log *zap.SugaredLogger, sqlxDB *sqlx.DB) Core {
 }
 
 var (
-	ErrNotFound              = errors.New("Validation error: Not found")
+	ErrNotFound              = errors.New("validation error: Not found")
 	ErrInvalidID             = errors.New("ID is not in its proper form")
 	ErrAuthenticationFailure = errors.New("authentication failed")
 )

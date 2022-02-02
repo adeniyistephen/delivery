@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/go-sql-driver/mysql" // Calls init function.
+	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
@@ -43,13 +43,13 @@ func Open(cfg Config) (*sqlx.DB, error) {
 	q := make(url.Values)
 	q.Set("sslmode", sslMode)
 	q.Set("timezone", "utc")
-	
+
 	str := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
 		cfg.User,
 		cfg.Password,
 		cfg.Host,
 		cfg.Port,
-		cfg.Name,)
+		cfg.Name)
 	db, err := sqlx.Open("mysql", str)
 	if err != nil {
 		return nil, fmt.Errorf("open: %w", err)

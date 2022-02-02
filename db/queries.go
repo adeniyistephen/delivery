@@ -169,62 +169,70 @@ func (d Delivery) RegionDeliveryOptionOverride(regionName string, deliveryOption
 }
 
 func (d Delivery) NewSellerQuery(sellerId int) (UserTotal, error) {
-	/*data := struct {
-			SellerID int `db:"id"`
-		}{
-			SellerID: sellerId,
-		}
-
-		const q = `
+	data := struct{}{}
+	const qt = `
+		SELECT * FROM user_type WHERE name = 'Seller'`
+	var user_type UserType
+	if err := database.NamedQueryStruct(d.db, qt, data, &user_type); err != nil {
+		return UserTotal{}, fmt.Errorf("selecting seller[%q]: %w", sellerId, err)
+	}
+	dataUser_type := struct {
+		SellerID    int `db:"s_id"`
+		UserType_Id int `db:"ut_id"`
+	}{
+		UserType_Id: user_type.Id,
+		SellerID:    sellerId,
+	}
+	const qu = `
+		SELECT id FROM user WHERE 1 = 1 AND is_active = 1 AND id = :s_id AND user_type_id = :ut_id`
+	var user User
+	if err := database.NamedQueryStruct(d.db, qu, dataUser_type, &user); err != nil {
+		return UserTotal{}, fmt.Errorf("selecting User[%q]: %w", sellerId, err)
+	}
+	dataUserTotal := struct {
+		UserID int `db:"u_id"`
+	}{
+		UserID: user.Id,
+	}
+	const qut = `
 		SELECT
-	        COUNT(u.id),
-	        ut.coin_amount
-	    INTO @user_exists, @user_coin_balance
-	    FROM user u
-	             INNER JOIN user_total ut
-	                        ON  1 = 1
-	                            AND u.id = ut.user_id
-	    WHERE 1 = 1
-	      AND u.is_active = 1
-	      AND u.id = :id
-	      AND u.user_type_id = (SELECT id FROM user_type WHERE name = 'Seller');
-	    IF @user_exists = 0 THEN
-	        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Seller does not exist';
-	    END IF;`
+			*
+		FROM user_total
+		WHERE 1 = 1
+		    AND userid = :u_id`
 
-		var seller UserTotal
-		if err := database.NamedQueryStruct(d.db, q, data, &seller); err != nil {
-			return UserTotal{}, fmt.Errorf("selecting deliveryOption deliveryOption[%q]: %w", sellerId, err)
-		}
-	*/
-	return UserTotal{}, nil
+	var seller UserTotal
+	if err := database.NamedQueryStruct(d.db, qut, dataUserTotal, &seller); err != nil {
+		return UserTotal{}, fmt.Errorf("selecting seller[%q]: %w", sellerId, err)
+	}
+	return seller, nil
 }
 
 func (d Delivery) ValidateDropShipper(dropshipperId int) error {
-	/*data := struct {
-			DropshipperId int `db:"id"`
-		}{
-			DropshipperId: dropshipperId,
-		}
-
-		const q = `
-		SET @dropshipper_exists = (
-	        SELECT COUNT(id) FROM user
+	data := struct{}{}
+	const qd = `
+		SELECT id FROM user_type WHERE name = 'Dropshipper'`
+	var user_type UserType
+	if err := database.NamedQueryStruct(d.db, qd, data, &user_type); err != nil {
+		return fmt.Errorf("selecting seller[%q]: %w", dropshipperId, err)
+	}
+	dataUser_type := struct {
+		DropShipperID int `db:"d_id"`
+		UserType_Id   int `db:"ut_id"`
+	}{
+		UserType_Id:   user_type.Id,
+		DropShipperID: dropshipperId,
+	}
+	const qu = `
+	        SELECT id FROM user
 	        WHERE 1 = 1
 	          AND is_active = 1
-	          AND id = :id
-	          AND user_type_id = (SELECT id FROM user_type WHERE name = 'Dropshipper')
-	    );
-	    IF @dropshipper_exists = 0 THEN
-	        SET @error_message = CONCAT('Dropshipper does not exist for user id: ', @dropshipper_exists, ' charles ', :id);
-	        -- SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Dropshipper does not exist';
-	        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = @error_message;
-	    END IF;`
-
-		var u User
-		if err := database.NamedQueryStruct(d.db, q, data, &u); err != nil {
-			return fmt.Errorf("selecting region region[%q]: %w", dropshipperId, err)
-		}*/
+	          AND id = :d_id
+	          AND user_type_id = :ut_id`
+	var u User
+	if err := database.NamedQueryStruct(d.db, qu, dataUser_type, &u); err != nil {
+		return fmt.Errorf("error selecting dropshipper [%q]: %w", dropshipperId, err)
+	}
 
 	return nil
 }

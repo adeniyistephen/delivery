@@ -149,32 +149,33 @@ insert  into `user`(`id`,`firstname`,`lastname`,`email`,`mobile_number`,`passwor
 (147,'M88','Luzon','Max88official@gmail.com','09351415087','$2a$10$oVoRXVxNGPvcgw56tQ1/au3IVJVlLNuJedCpXry96xQIsIMXOv6Fu',17,NULL,'2020-08-09 11:44:26',NULL,NULL,1,1,'005548024688','Mandaluyong City','1999-01-01','M','n/a',NULL),
 (132,'Droppy','Luzon','marcoavilam88@gmail.com','09199844180','$2a$10$PuBCd7WdoGGiShcVwKAbder9hNy2a9gWCHKApsEUSmIgedINuLc5K',17,NULL,'2020-08-06 16:13:46','2020-08-09 11:34:20',NULL,1,1,'1094-5245-6563','581 Lagman 2, Coloong 1, Valenzuela City','1992-10-29','M','MarcoAvila24',NULL),
 (43,'Droppy','VisMin','beautybeyondhealth@gmail.com','9176336836','$2a$10$mUATLSI9Dch29.5Pk/d8MeZWsrJB/udA2dc2WwoFGMW19IYC7gPqG',17,NULL,'2020-08-04 10:30:29','2020-08-09 11:09:15',NULL,1,1,'9359458565','Purok 5, Upper Hinaplanon','1993-06-02','M','n/a',NULL),
+(101,'Jan Dane Mar','Tura','jtura115@gmail.com','09664153128','$2a$10$OeobOMP/LCPDeiErrCg2Ju92eg07dwCVyZaCYlaeL.N4e6ytd5QiW',16,NULL,'2020-08-06 10:11:56','2020-09-17 03:34:04',NULL,1,1,'304010036333','Sitio Pundok Pulangbato st. Pit os Cebu Cuty','1999-01-01','M','816603609',NULL),
 (41,'My','Seller','my_seller@gg.com','12321','$2a$10$24WGeC9w/S3MEbUMD2OOPeN5EmeNn8.AiuyTC7So9QWtsZ1rFxFOe',16,NULL,'2020-07-25 19:00:45','2020-08-06 09:28:26',NULL,0,1,'123','123','2020-07-29','F','123123',NULL);
 
 DROP TABLE IF EXISTS `user_total`;
 
 CREATE TABLE `user_total` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `user_id` int NOT NULL,
+  `userid` int NOT NULL,
   `amount` decimal(65,2) NOT NULL,
-  `coin_amount` decimal(65,2) NOT NULL,
-  `created_by` int DEFAULT NULL,
-  `updated_by` int DEFAULT NULL,
-  `last_updated` timestamp NULL DEFAULT NULL,
+  `coinamount` decimal(65,2) NOT NULL,
+  `createdby` int DEFAULT NULL,
+  `updatedby` int DEFAULT NULL,
+  `lastupdated` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `user_id_2` (`user_id`),
-  KEY `user_id` (`user_id`),
-  KEY `created_by` (`created_by`),
-  KEY `updated_by` (`updated_by`),
+  UNIQUE KEY `user_id_2` (`userid`),
+  KEY `userid` (`userid`),
+  KEY `createdby` (`createdby`),
+  KEY `updatedby` (`updatedby`),
   -- CONSTRAINT `user_total_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
-  CONSTRAINT `user_total_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`),
-  CONSTRAINT `user_total_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
-  CONSTRAINT `user_total_ibfk_4` FOREIGN KEY (`updated_by`) REFERENCES `user` (`id`)
+  CONSTRAINT `user_total_ibfk_2` FOREIGN KEY (`createdby`) REFERENCES `user` (`id`),
+  CONSTRAINT `user_total_ibfk_3` FOREIGN KEY (`userid`) REFERENCES `user` (`id`),
+  CONSTRAINT `user_total_ibfk_4` FOREIGN KEY (`updatedby`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1856 DEFAULT CHARSET=latin1;
 
 /*Data for the table `user_total` */
 
-insert  into `user_total`(`id`,`user_id`,`amount`,`coin_amount`,`created_by`,`updated_by`,`last_updated`) values 
+insert  into `user_total`(`id`,`userid`,`amount`,`coinamount`,`createdby`,`updatedby`,`lastupdated`) values 
 (735,26,0.00,0.00,38,NULL,NULL),
 (736,37,20474558.00,783902.00,38,NULL,NULL),
 (737,38,-5066412.00,14986187.00,38,NULL,NULL),
@@ -182,4 +183,5 @@ insert  into `user_total`(`id`,`user_id`,`amount`,`coin_amount`,`created_by`,`up
 (739,147,0.00,0.00,38,NULL,NULL),
 (740,132,0.00,0.00,38,NULL,NULL),
 (741,43,0.00,0.00,38,NULL,NULL),
-(742,41,0.00,0.00,38,NULL,NULL);
+(742,41,0.00,0.00,38,NULL,NULL),
+(743,101,0.00,250.00,38,38,'2020-09-02 12:27:01');

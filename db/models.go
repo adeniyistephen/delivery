@@ -16,7 +16,7 @@ type Region struct {
 
 type User struct {
 	Id            int                 `json:"id"`
-	FistName      string              `json:"fistname"`
+	FistName      string              `json:"firstname"`
 	LastName      string              `json:"lastname"`
 	Email         string              `json:"email"`
 	Mobile_Number string              `json:"mobile_number"`
@@ -42,13 +42,13 @@ type SysParam struct {
 }
 
 type UserTotal struct {
-	Id          int                 `json:"id"`
-	UserId      int                 `json:"user_id"`
-	Amount      float64             `json:"amount"`
-	CoinAmount  float64             `json:"coin_amount"`
-	CreatedBy   int                 `json:"created_by"`
-	UpdatedBy   int                 `json:"updated_by"`
-	LastUpdated timestamp.Timestamp `json:"last_updated"`
+	Id          int     `json:"id"`
+	UserId      int     `json:"userid"`
+	Amount      float64 `json:"amount"`
+	CoinAmount  float64 `json:"coinamount"`
+	CreatedBy   int     `json:"createdby"`
+	UpdatedBy   int     `json:"updatedby"`
+	LastUpdated string  `json:"lastupdated"`
 }
 
 type UserType struct {

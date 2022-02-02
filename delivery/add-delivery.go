@@ -1,4 +1,4 @@
-package main
+package delivery
 
 import (
 	"errors"
@@ -8,42 +8,44 @@ import (
 	"github.com/adeniyistephen/delivery/database"
 	"github.com/adeniyistephen/delivery/db"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 type Core struct {
 	delivery db.Delivery
 }
 
-func NewCore(sqlxDB *sqlx.DB) Core {
+func NewCore(log *zap.SugaredLogger, sqlxDB *sqlx.DB) Core {
 	return Core{
-		delivery: db.NewDelivery(sqlxDB),
+		delivery: db.NewDelivery(log, sqlxDB),
 	}
 }
 
 var (
-	ErrNotFound              = errors.New("user not found")
+	ErrNotFound              = errors.New("Validation error: Not found")
 	ErrInvalidID             = errors.New("ID is not in its proper form")
 	ErrAuthenticationFailure = errors.New("authentication failed")
 )
 
 func (c Core) AddDelivery(
-	deliveryOption string, 
-	sellerId int, 
-	dropshipperId int, 
-	name string, 
-	contactNumber string, 
+	deliveryOption string,
+	sellerId int,
+	dropshipperId int,
+	name string,
+	contactNumber string,
 	address string,
 	note string,
 	region string,
 	serviceFee float64,
 	declaredAmount float64,
 	deliveryDetails string) {
-	
+
+	fmt.Println("Add Delivery Hit")
 	var basePrice int
 
 	// Validate declared amount
 	if declaredAmount <= 0 {
-		errors.New("Declared amount must be greater than 0")
+		log.Fatal("Declared amount must be greater than 0")
 	}
 
 	// Modify declared amount to then be adjusted to service fee
@@ -52,7 +54,7 @@ func (c Core) AddDelivery(
 
 	// Validate additional details
 	if name == "" || contactNumber == "" || note == "" {
-		errors.New("Name, contact number, and note are required")
+		log.Fatal("Name, contact number, and note are required")
 	}
 
 	// Validate delivery option
@@ -61,8 +63,9 @@ func (c Core) AddDelivery(
 		if errors.Is(err, database.ErrDBNotFound) {
 			log.Println(ErrNotFound)
 		}
-		fmt.Errorf("query: %w", err)
+		fmt.Println("query: %w", err)
 	}
+	fmt.Println("Delivery Option: ", devOption)
 
 	// Validate region
 	region_exists, err := c.delivery.ValidateRegion(region)
@@ -70,13 +73,16 @@ func (c Core) AddDelivery(
 		if errors.Is(err, database.ErrDBNotFound) {
 			log.Println(ErrNotFound)
 		}
-		fmt.Errorf("query: %w", err)
+		fmt.Println("query: %w", err)
 	}
+	fmt.Println("Region: ", region_exists)
 
 	/*
-      Use system based config and override the dropshipper ID to use the system based rules
-    */
-	dropshipperId = c.delivery.RegionDeliveryOptionOverride(region_exists.Name, devOption.Name)
+	   Use system based config and override the dropshipper ID to use the system based rules
+	*/
+	dropId := c.delivery.RegionDeliveryOptionOverride(region_exists.Name, devOption.Name)
+	dropshipperId = dropId.Id
+	fmt.Println("Dropshipper ID: ", dropshipperId)
 
 	// New seller query
 	S, err := c.delivery.NewSellerQuery(sellerId)
@@ -84,23 +90,24 @@ func (c Core) AddDelivery(
 		if errors.Is(err, database.ErrDBNotFound) {
 			log.Println(ErrNotFound)
 		}
-		fmt.Errorf("query: %w", err)
+		fmt.Println("query: %w", err)
 	}
+	fmt.Println("Seller: ", S)
 
 	// Validate dropshipper
-	if err:= c.delivery.ValidateDropShipper(dropshipperId); err != nil {
+	if err := c.delivery.ValidateDropShipper(dropshipperId); err != nil {
 		if errors.Is(err, database.ErrDBNotFound) {
 			log.Println(ErrNotFound)
 		}
-		fmt.Errorf("query: %w", err)
+		fmt.Println("query: %w", err)
 	}
 
 	// Validate that the seller has ENOUGH coins that he'd be able to make that transaction
 	if S.CoinAmount < serviceFee {
-		errors.New("You don't have enough coins")
+		fmt.Println("You don't have enough coins")
 	}
 
-	
+	fmt.Println(basePrice)
 }
 
 func GetServiceFee(declaredAmount float64) float64 {

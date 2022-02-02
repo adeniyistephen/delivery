@@ -55,3 +55,7 @@ type UserType struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
 }
+
+type DropShipperId struct {
+	Id int `json:"id"`
+}

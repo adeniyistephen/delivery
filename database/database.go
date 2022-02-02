@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq" // Calls init function.
+	_ "github.com/go-sql-driver/mysql" // Calls init function.
 	"go.uber.org/zap"
 )
 
@@ -27,6 +27,7 @@ type Config struct {
 	Password     string
 	Host         string
 	Name         string
+	Port         int
 	MaxIdleConns int
 	MaxOpenConns int
 	DisableTLS   bool
@@ -42,22 +43,20 @@ func Open(cfg Config) (*sqlx.DB, error) {
 	q := make(url.Values)
 	q.Set("sslmode", sslMode)
 	q.Set("timezone", "utc")
-
-	u := url.URL{
-		Scheme:   "mysql",
-		User:     url.UserPassword(cfg.User, cfg.Password),
-		Host:     cfg.Host,
-		Path:     cfg.Name,
-		RawQuery: q.Encode(),
-	}
-
-	db, err := sqlx.Open("mysql", u.String())
+	
+	str := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
+		cfg.User,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.Name,)
+	db, err := sqlx.Open("mysql", str)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open: %w", err)
 	}
 	db.SetMaxIdleConns(cfg.MaxIdleConns)
 	db.SetMaxOpenConns(cfg.MaxOpenConns)
-
+	fmt.Println("Connected to database")
 	return db, nil
 }
 

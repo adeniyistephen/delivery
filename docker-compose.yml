@@ -1,0 +1,34 @@
+version: '3.8'
+
+networks:
+  shared-network:
+    driver: bridge
+
+services:
+  db:
+    container_name: "delivery_db"
+    networks:
+      - shared-network
+    # image: mysql:8.0.12
+    build:
+      context: .
+      dockerfile: db.Dockerfile
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_USER=mydb
+      - MYSQL_ROOT_PASSWORD=pass
+      - MYSQL_PASSWORD=pass
+      - MYSQL_DATABASE=delivery
+      - MYSQL_ROOT_HOST=db
+      - MYSQL_ROOT_PORT=3306
+
+  api:
+    container_name:  "delivery_api"
+    networks:
+      - shared-network
+    image: service:1.0
+    ports:
+      - 8080:8080
+    depends_on:
+      - db

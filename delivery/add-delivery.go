@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/adeniyistephen/delivery/database"
 	"github.com/adeniyistephen/delivery/db"
@@ -41,7 +44,7 @@ func (c Core) AddDelivery(
 	deliveryDetails string) {
 
 	fmt.Println("Add Delivery Hit")
-	var basePrice int
+	var basePrice float64
 
 	// Validate declared amount
 	if declaredAmount <= 0 {
@@ -107,7 +110,32 @@ func (c Core) AddDelivery(
 		fmt.Println("You don't have enough coins")
 	}
 
-	fmt.Println(basePrice)
+	// Validate Product
+	str_lenght := len(deliveryDetails)
+	uniqueTmpTable, err := c.Product_Validation(deliveryDetails, str_lenght, deliveryOption, region_exists.Id, sellerId, dropshipperId) 
+	if err != nil {
+		if errors.Is(err, database.ErrDBNotFound) {
+			log.Println(ErrNotFound)
+		}
+		fmt.Println("product validation error: %w", err)
+	}
+
+	// Get Delivery Status Id
+	deliveryStatus, err := c.delivery.GetDeliveryStatusId("Proposed")
+	if err != nil {
+		if errors.Is(err, database.ErrDBNotFound) {
+			log.Println(ErrNotFound)
+		}
+		fmt.Println("query: %w", err)
+	}
+	//Insert into delivery table
+	t := time.Now()
+	for _, uTT := range uniqueTmpTable {
+		err := c.delivery.InsertIntoDelivery(sellerId, t.String(),true, name, address, region_exists.Id, serviceFee, basePrice, declaredAmount, devOption.Id, sellerId, dropshipperId, deliveryStatus.Id, contactNumber, note, uTT.TotalPriceDistributor)
+		if err != nil {
+			log.Println("insert into delivery error: %w", err)
+		}
+	}
 }
 
 func GetServiceFee(declaredAmount float64) float64 {
@@ -133,8 +161,8 @@ func GetServiceFee(declaredAmount float64) float64 {
 	return serviceFee
 }
 
-func GetBasePrice(declaredAmount float64) int {
-	var basePrice int
+func GetBasePrice(declaredAmount float64) float64 {
+	var basePrice float64
 	if declaredAmount >= 0 && declaredAmount <= 1499 {
 		basePrice = 130
 	} else if declaredAmount >= 1500 && declaredAmount <= 1999 {
@@ -154,4 +182,90 @@ func GetBasePrice(declaredAmount float64) int {
 	}
 
 	return basePrice
+}
+
+type UniqueTmpTable struct {
+	ProductId               int
+	Quantity                int
+	PricePerItemDistributor float64
+	TotalPriceDistributor   float64
+}
+
+func (c Core) Product_Validation(delivery_details string, str_lenght int, devOption string, regionId int, sellerId int, dropshipperId int) ([]UniqueTmpTable, error) {
+	utt := []UniqueTmpTable{}
+	for product, quantity := range gettingProductAndQuantity(delivery_details) {
+		validateProduct, err := c.delivery.ValidateProduct(product)
+		if err != nil {
+			if errors.Is(err, database.ErrDBNotFound) {
+				log.Println(ErrNotFound)
+			}
+			fmt.Println("query: %w", err)
+		}
+		fmt.Println("Product: ", validateProduct)
+
+		if devOption == "Dropship" && validateProduct.Name == "Max-Cee Blister" {
+			fmt.Errorf("Max-Cee Blister is not available for Dropship")
+		}
+		if devOption == "Parcel" && validateProduct.Name == "Max-Cee" {
+			fmt.Errorf("Max-Cee is not available for Parcel")
+		}
+		if devOption == "Parcel" {
+			inventory, err := c.delivery.ValidateQuantityInventory(validateProduct.Id, quantity, regionId, sellerId, dropshipperId)
+			if err != nil {
+				if errors.Is(err, database.ErrDBNotFound) {
+					log.Println(ErrNotFound)
+				}
+				fmt.Println("query, no enough product: %w", err)
+			}
+			fmt.Println("Validate Quantity: ", inventory)
+		}
+		utt = append(utt,
+			UniqueTmpTable{
+				ProductId:               validateProduct.Id,
+				Quantity:                quantity,
+				PricePerItemDistributor: validateProduct.PricePerItemDropshipper,
+				TotalPriceDistributor:   float64(quantity) * validateProduct.PricePerItemDropshipper,
+			})
+	}
+
+	for _, ut := range utt {
+		if devOption == "Parcel" {
+			if err := c.delivery.UpdateInventorySeller(regionId, sellerId, dropshipperId, ut.Quantity); err != nil {
+				if errors.Is(err, database.ErrDBNotFound) {
+					log.Println(ErrNotFound)
+				}
+				fmt.Println("query: %w", err)
+			}
+		}
+	}
+
+	return utt, nil
+}
+
+func gettingProductAndQuantity(delivery_details string) map[string]int {
+	product := make(map[string]bool)
+	product["Max-Cee"] = true
+	product["PPAR"] = true
+	product["Maxijuice"] = true
+	product["Tamaraw"] = true
+	product["Vert"] = true
+	product["Rouge"] = true
+	product["Kogen"] = true
+	product["Glutagen"] = true
+	product["Vert Lotion"] = true
+	product["Rouge Lotion"] = true
+	product["Max-Cee Blister"] = true
+	product["Maxigold"] = true
+	product["Shakura Glutathone"] = true
+
+	str := strings.Split(delivery_details, " ")
+	productQuantity := make(map[string]int)
+	for i := 0; i < len(str); i++ {
+		_, ok := product[str[i]]
+		if ok {
+			productQuantity[str[i]], _ = strconv.Atoi(str[i-1])
+		}
+	}
+
+	return productQuantity
 }

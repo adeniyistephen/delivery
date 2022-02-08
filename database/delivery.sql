@@ -13,6 +13,28 @@ insert  into `delivery_option`(`id`,`name`) values
 (4,'Dropship'),
 (3,'Parcel');
 
+/*Table structure for table `delivery_status` */
+
+DROP TABLE IF EXISTS `delivery_status`;
+
+CREATE TABLE `delivery_status` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `delivery_status` */
+
+insert  into `delivery_status`(`id`,`name`) values 
+(7,'Accepted'),
+(9,'Delivered'),
+(8,'Fulfilled'),
+(6,'Proposed'),
+(10,'Rejected'),
+(11,'Returned'),
+(12,'Voided');
+
 /* region table */
 
 DROP TABLE IF EXISTS `region`;
@@ -185,3 +207,144 @@ insert  into `user_total`(`id`,`userid`,`amount`,`coinamount`,`createdby`,`updat
 (741,43,0.00,0.00,38,NULL,NULL),
 (742,41,0.00,0.00,38,NULL,NULL),
 (743,101,0.00,250.00,38,38,'2020-09-02 12:27:01');
+
+/*Table structure for table `product_type` */
+
+DROP TABLE IF EXISTS `product_type`;
+
+CREATE TABLE `product_type` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+
+/*Data for the table `product_type` */
+
+insert  into `product_type`(`id`,`name`) values 
+(1,'Consumables'),
+(2,'Cosmetics'),
+(3,'Others');
+
+/*Table structure for table `product` */
+
+DROP TABLE IF EXISTS `product`;
+
+CREATE TABLE `product` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `producttypeid` int NOT NULL,
+  `createdby` int DEFAULT NULL,
+  `createddate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `lastupdated` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `updatedby` varchar(255) DEFAULT NULL,
+  `isactive` tinyint DEFAULT '1',
+  `url` text,
+  `priceperitem` decimal(65,2) NOT NULL DEFAULT '500.00',
+  `priceperitemdropshipper` decimal(65,2) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`),
+  KEY `producttype` (`producttypeid`),
+  KEY `user_ibfk_3` (`createdby`),
+  CONSTRAINT `product_ibfk_5` FOREIGN KEY (`producttypeid`) REFERENCES `product_type` (`id`),
+  CONSTRAINT `user_ibfk_3` FOREIGN KEY (`createdby`) REFERENCES `user` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=latin1;
+
+/*Data for the table `product` */
+
+insert  into `product`(`id`,`name`,`producttypeid`,`createdby`,`createddate`,`lastupdated`,`updatedby`,`isactive`,`url`,`priceperitem`,`priceperitemdropshipper`) values 
+(15,'Max-Cee',1,26,'2020-06-08 14:48:30','2020-08-10 09:12:35',NULL,1,'/images/Max-Cee.JPG',1560.00,1092.00),
+(16,'PPAR',1,26,'2020-06-08 14:49:48','2020-08-13 06:25:47','',1,'/images/PPAR.jpeg',1600.00,1120.00),
+(17,'Maxijuice',1,26,'2020-06-08 15:19:45','2020-08-09 13:12:43',NULL,1,'/images/Maxijuice.jpeg',560.00,392.00),
+(24,'Tamaraw +',1,26,'2020-07-18 23:39:02','2020-08-09 13:12:55',NULL,1,'/images/Tamaraw +.jpeg',1950.00,1365.00),
+(31,'Vert',2,26,'2020-07-25 18:05:19','2020-08-09 13:13:05',NULL,1,'/images/Vert.jpeg',250.00,175.00);
+
+
+/*Table structure for table `inventory` */
+
+DROP TABLE IF EXISTS `inventory`;
+
+CREATE TABLE `inventory` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `productid` int NOT NULL,
+  `quantity` int NOT NULL,
+  `createdby` int NOT NULL,
+  `updatedby` int DEFAULT NULL,
+  `createddate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `isactive` tinyint NOT NULL,
+  `regionid` int NOT NULL,
+  `sellerid` int NOT NULL,
+  `dropshipperid` int NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `productid` (`productid`,`regionid`,`sellerid`,`dropshipperid`),
+  KEY `createdby` (`createdby`),
+  KEY `updatedby` (`updatedby`),
+  KEY `regionid` (`regionid`),
+  KEY `sellerid` (`sellerid`),
+  KEY `dropshipperid` (`dropshipperid`),
+  CONSTRAINT `inventory_ibfk_1` FOREIGN KEY (`productid`) REFERENCES `product` (`id`),
+  CONSTRAINT `inventory_ibfk_2` FOREIGN KEY (`createdby`) REFERENCES `user` (`id`),
+  CONSTRAINT `inventory_ibfk_3` FOREIGN KEY (`updatedby`) REFERENCES `user` (`id`),
+  CONSTRAINT `inventory_ibfk_5` FOREIGN KEY (`regionid`) REFERENCES `region` (`id`),
+  CONSTRAINT `inventory_ibfk_6` FOREIGN KEY (`sellerid`) REFERENCES `user` (`id`),
+  CONSTRAINT `inventory_ibfk_7` FOREIGN KEY (`dropshipperid`) REFERENCES `user` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4641 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `inventory` */
+
+insert  into `inventory`(`id`,`productid`,`quantity`,`createdby`,`updatedby`,`createddate`,`isactive`,`regionid`,`sellerid`,`dropshipperid`) values 
+(550,16,10,101,101,'2021-07-15 10:30:12',1,3,101,132),
+(551,17,0,101,101,'2021-01-13 06:15:34',1,4,101,132),
+(552,31,0,101,NULL,'2021-12-01 11:21:28',1,4,101,43);
+
+/*Table structure for table `delivery` */
+
+DROP TABLE IF EXISTS `delivery`;
+
+CREATE TABLE `delivery` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `createdby` int NOT NULL,
+  `updatedby` int DEFAULT NULL,
+  `lastupdated` varchar(255) NOT NULL DEFAULT '',
+  `createddate` varchar(255) NOT NULL DEFAULT '',
+  `isactive` tinyint NOT NULL,
+  `name` text NOT NULL,
+  `address` text NOT NULL,
+  `regionid` int NOT NULL,
+  `servicefee` decimal(65,2) NOT NULL,
+  `declaredamount` decimal(65,2) NOT NULL,
+  `deliveryoptionid` int DEFAULT NULL,
+  `deliverystatusid` int NOT NULL,
+  `sellerid` int NOT NULL,
+  `dropshipperid` int NOT NULL,
+  `riderid` int DEFAULT NULL,
+  `trackingnumber` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `contactnumber` varchar(255) NOT NULL,
+  `note` text NOT NULL,
+  `baseprice` decimal(65,2) NOT NULL,
+  `amountdistributor` decimal(65,2) DEFAULT NULL,
+  `voidorrejectreason` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `trackingnumber` (`trackingnumber`),
+  KEY `createdby` (`createdby`),
+  KEY `updatedby` (`updatedby`),
+  KEY `regionid` (`regionid`),
+  KEY `deliveryoptionid` (`deliveryoptionid`),
+  KEY `deliverystatusid` (`deliverystatusid`),
+  KEY `sellerid` (`sellerid`),
+  KEY `dropshipperid` (`dropshipperid`),
+  KEY `riderid` (`riderid`),
+  CONSTRAINT `delivery_ibfk_1` FOREIGN KEY (`createdby`) REFERENCES `user` (`id`),
+  CONSTRAINT `delivery_ibfk_2` FOREIGN KEY (`updatedby`) REFERENCES `user` (`id`),
+  CONSTRAINT `delivery_ibfk_3` FOREIGN KEY (`regionid`) REFERENCES `region` (`id`),
+  CONSTRAINT `delivery_ibfk_4` FOREIGN KEY (`deliveryoptionid`) REFERENCES `delivery_option` (`id`),
+  CONSTRAINT `delivery_ibfk_5` FOREIGN KEY (`deliverystatusid`) REFERENCES `delivery_status` (`id`),
+  CONSTRAINT `delivery_ibfk_6` FOREIGN KEY (`sellerid`) REFERENCES `user` (`id`),
+  CONSTRAINT `delivery_ibfk_7` FOREIGN KEY (`dropshipperid`) REFERENCES `user` (`id`),
+  CONSTRAINT `delivery_ibfk_8` FOREIGN KEY (`riderid`) REFERENCES `user` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10604 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `delivery` */
+
+insert  into `delivery`(`id`,`createdby`,`updatedby`,`lastupdated`,`createddate`,`isactive`,`name`,`address`,`regionid`,`servicefee`,`declaredamount`,`deliveryoptionid`,`deliverystatusid`,`sellerid`,`dropshipperid`,`riderid`,`trackingnumber`,`contactnumber`,`note`,`baseprice`,`amountdistributor`,`voidorrejectreason`) values 
+(337,101,101,"",'2020-08-12 18:36:07',1,'Jethro C. Sanchez','Caminade Compund, Hi-way 77, Talamban, Cebu City',4,195.00,800.00,4,9,101,147,NULL,'4735-4293-MFNQ','09177024565','Landmark: infront of F&M townhomes, green gate, Talamban, Cebu City',130.00,350.00,NULL),
+(338,101,101,"",'2020-08-13 04:03:08',1,'Maria Lourder Jugueta','30 macapuno st. brgy ugong, valle verde 1, pasig city 1604',3,195.00,550.00,4,9,101,147,NULL,'4735-5408-SBZC','09275610095','(Live test)',130.00,350.00,NULL);

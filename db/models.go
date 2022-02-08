@@ -60,6 +60,10 @@ type DropShipperId struct {
 	Id int `json:"id"`
 }
 
+type DeliveryID struct {
+	Id int `json:"id"`
+}
+
 type Product struct {
 	Id                      int     `json:"id"`
 	Name                    string  `json:"name"`
@@ -119,4 +123,45 @@ type DeliveryModel struct {
 type DeliveryStatus struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
+}
+
+type DeliveryDetail struct {
+	Id                      int     `json:"id"`
+	DeliveryId              int     `json:"deliveryid"`
+	ProductId               int     `json:"productid"`
+	Quantity                int     `json:"quantity"`
+	PricePerItemDistributor float64 `json:"priceperitemdistributor"`
+	TotalPriceDistributor   float64 `json:"totalpricedistributor"`
+}
+
+type DeliveryTracking struct {
+	Id               int    `json:"id"`
+	DeliveryId       int    `json:"deliveryid"`
+	DeliveryStatusId int    `json:"deliverystatusid"`
+	LastUpdated      string `json:"lastupdated"`
+	UpdatedBy        int    `json:"updatedby"`
+}
+
+type Type string
+
+const (
+	D Type = "D"
+	C Type = "C"
+)
+
+type CoinTransaction struct {
+	Id                int     `json:"id"`
+	CreatedBy         int     `json:"createdby"`
+	UpdatedBy         int     `json:"updatedby"`
+	CreatedDate       string  `json:"createddate"`
+	IsActive          bool    `json:"isactive"`
+	TransactionId     int     `json:"transactionid"`
+	UserId            int     `json:"userid"`
+	Type              Type    `json:"type"`
+	Amount            float64 `json:"amount"`
+	CoinTransactionId int     `json:"cointransactionid"`
+	OrderId           int     `json:"orderid"`
+	DeliveryId        int     `json:"deliveryid"`
+	WithdrawalId      int     `json:"withdrawalid"`
+	LastUpdate        string  `json:"lastupdate"`
 }

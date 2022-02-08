@@ -339,7 +339,7 @@ func (d Delivery) InsertIntoDelivery(
 	contactNumber string,
 	note string,
 	amountDistributor float64,
-) (error) {
+) (DeliveryID, error) {
 	data := struct {
 		CreatedBy         int     `db:"created_by"`
 		CreatedDate       string  `db:"created_date"`
@@ -383,9 +383,19 @@ func (d Delivery) InsertIntoDelivery(
 		(:created_by, :created_date, :is_active, :name, :address, :region_id, :service_fee, :base_price, :declared_amount, :delivery_option_id, :seller_id, :dropshipper_id, :delivery_status_id, :contact_number, :note, :amount_distributor)`
 
 	if err := database.NamedExecContext(d.db, q, data); err != nil {
-		return fmt.Errorf("inserting into delivery: %w", err)
+		return DeliveryID{}, fmt.Errorf("inserting into delivery: %w", err)
 	}
-	return nil
+
+	const q2 = `
+	SELECT
+		MAX(id) AS id
+	FROM delivery`
+
+	var deliveryId DeliveryID
+	if err := database.NamedQueryStruct(d.db, q2, data, &deliveryId); err != nil {
+		return DeliveryID{}, fmt.Errorf("inserting into delivery: %w", err)
+	}
+	return deliveryId, nil
 }
 
 func (d Delivery) GetDeliveryStatusId(deliveryStatus string) (DeliveryStatus, error) {
@@ -407,4 +417,77 @@ func (d Delivery) GetDeliveryStatusId(deliveryStatus string) (DeliveryStatus, er
 		return DeliveryStatus{}, fmt.Errorf("selecting delivery status[%q]: %w", deliveryStatus, err)
 	}
 	return dStatus, nil
+}
+
+func (d Delivery) UpdateDeliveryDetails(deliveryId int, productId int, quantity int, pricePerItemDistributor float64, totalPriceDistributor float64) error {
+	data := struct {
+		DeliveryId              int     `db:"delivery_id"`
+		ProductId               int     `db:"product_id"`
+		Quantity                int     `db:"quantity"`
+		PricePerItemDistributor float64 `db:"price_per_item_distributor"`
+		TotalPriceDistributor   float64 `db:"total_price_distributor"`
+	}{
+		DeliveryId:              deliveryId,
+		ProductId:               productId,
+		Quantity:                quantity,
+		PricePerItemDistributor: pricePerItemDistributor,
+		TotalPriceDistributor:   totalPriceDistributor,
+	}
+
+	const q = `
+	INSERT INTO delivery_detail
+		(deliveryid, productid, quantity, priceperitemdistributor, totalpricedistributor)
+	VALUES
+		(:delivery_id, :product_id, :quantity, :price_per_item_distributor, :total_price_distributor)`
+
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return fmt.Errorf("updating delivery details[%q]: %w", deliveryId, err)
+	}
+	return nil
+}
+
+func (d Delivery) DeliveryTracking(deliveryId int, deliveryStatusId int, lastUpdated string, sellerId int) error {
+	data := struct {
+		DeliveryId       int    `db:"delivery_id"`
+		DeliveryStatusId int    `db:"delivery_status_id"`
+		LastUpdated      string `db:"last_updated"`
+		SellerId         int    `db:"seller_id"`
+	}{
+		DeliveryId:       deliveryId,
+		DeliveryStatusId: deliveryStatusId,
+		LastUpdated:      lastUpdated,
+		SellerId:         sellerId,
+	}
+
+	const q = `
+	INSERT INTO delivery_tracking
+		(deliveryid, deliverystatusid, lastupdated, updatedby)
+	VALUES
+		(:delivery_id, :delivery_status_id, :last_updated, :seller_id)`
+
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return fmt.Errorf("inserting delivery tracking[%q]: %w", deliveryId, err)
+	}
+	return nil
+}
+
+func (d Delivery) UpdateUserTotal(sellerId int) error {
+	data := struct {
+		SellerId int `db:"seller_id"`
+	}{
+		SellerId: sellerId,
+	}
+
+	const q = `
+	UPDATE 
+		user_total
+	SET 
+		coinamount = coinamount - :seller_id
+	WHERE 1 = 1
+		AND userid = :seller_id`
+
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return fmt.Errorf("updating user total: %w", err)
+	}
+	return nil
 }

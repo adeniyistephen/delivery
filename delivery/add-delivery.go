@@ -131,9 +131,19 @@ func (c Core) AddDelivery(
 	//Insert into delivery table
 	t := time.Now()
 	for _, uTT := range uniqueTmpTable {
-		err := c.delivery.InsertIntoDelivery(sellerId, t.String(),true, name, address, region_exists.Id, serviceFee, basePrice, declaredAmount, devOption.Id, sellerId, dropshipperId, deliveryStatus.Id, contactNumber, note, uTT.TotalPriceDistributor)
+		deliveryId, err := c.delivery.InsertIntoDelivery(sellerId, t.String(),true, name, address, region_exists.Id, serviceFee, basePrice, declaredAmount, devOption.Id, sellerId, dropshipperId, deliveryStatus.Id, contactNumber, note, uTT.TotalPriceDistributor)
 		if err != nil {
 			log.Println("insert into delivery error: %w", err)
+		}
+
+		// Update DeliveryDetails into delivery_details table
+		if err := c.delivery.UpdateDeliveryDetails(deliveryId.Id, uTT.ProductId, uTT.Quantity, uTT.PricePerItemDistributor, uTT.TotalPriceDistributor); err != nil {
+			log.Println("update delivery details error: %w", err)
+		}
+
+		// Add to delivery tracking
+		if err := c.delivery.DeliveryTracking(deliveryId.Id, deliveryStatus.Id, t.String(), sellerId); err != nil {
+			log.Println("update delivery tracking error: %w", err)
 		}
 	}
 }

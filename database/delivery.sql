@@ -348,3 +348,234 @@ CREATE TABLE `delivery` (
 insert  into `delivery`(`id`,`createdby`,`updatedby`,`lastupdated`,`createddate`,`isactive`,`name`,`address`,`regionid`,`servicefee`,`declaredamount`,`deliveryoptionid`,`deliverystatusid`,`sellerid`,`dropshipperid`,`riderid`,`trackingnumber`,`contactnumber`,`note`,`baseprice`,`amountdistributor`,`voidorrejectreason`) values 
 (337,101,101,"",'2020-08-12 18:36:07',1,'Jethro C. Sanchez','Caminade Compund, Hi-way 77, Talamban, Cebu City',4,195.00,800.00,4,9,101,147,NULL,'4735-4293-MFNQ','09177024565','Landmark: infront of F&M townhomes, green gate, Talamban, Cebu City',130.00,350.00,NULL),
 (338,101,101,"",'2020-08-13 04:03:08',1,'Maria Lourder Jugueta','30 macapuno st. brgy ugong, valle verde 1, pasig city 1604',3,195.00,550.00,4,9,101,147,NULL,'4735-5408-SBZC','09275610095','(Live test)',130.00,350.00,NULL);
+
+
+/*Table structure for table `delivery_detail` */
+
+DROP TABLE IF EXISTS `delivery_detail`;
+
+CREATE TABLE `delivery_detail` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `deliveryid` int NOT NULL,
+  `productid` int NOT NULL,
+  `quantity` int NOT NULL,
+  `priceperitemdistributor` decimal(65,2) DEFAULT NULL,
+  `totalpricedistributor` decimal(65,2) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `deliveryid` (`deliveryid`),
+  KEY `productid` (`productid`),
+  CONSTRAINT `delivery_detail_ibfk_1` FOREIGN KEY (`deliveryid`) REFERENCES `delivery` (`id`),
+  CONSTRAINT `delivery_detail_ibfk_2` FOREIGN KEY (`productid`) REFERENCES `product` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=35926 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `delivery_detail` */
+
+insert  into `delivery_detail`(`id`,`deliveryid`,`productid`,`quantity`,`priceperitemdistributor`,`totalpricedistributor`) values 
+(996,337,31,2,175.00,350.00),
+(997,338,31,2,175.00,350.00);
+
+/*Table structure for table `delivery_tracking` */
+
+DROP TABLE IF EXISTS `delivery_tracking`;
+
+CREATE TABLE `delivery_tracking` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `deliveryid` int NOT NULL,
+  `deliverystatusid` int NOT NULL,
+  `lastupdated` varchar(255) DEFAULT '',
+  `updatedby` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `deliveryid` (`deliveryid`),
+  KEY `deliverystatusid` (`deliverystatusid`),
+  KEY `updatedby` (`updatedby`),
+  CONSTRAINT `delivery_tracking_ibfk_1` FOREIGN KEY (`deliveryid`) REFERENCES `delivery` (`id`),
+  CONSTRAINT `delivery_tracking_ibfk_2` FOREIGN KEY (`deliverystatusid`) REFERENCES `delivery_status` (`id`),
+  CONSTRAINT `delivery_tracking_ibfk_3` FOREIGN KEY (`updatedby`) REFERENCES `user` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=37014 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `delivery_tracking` */
+
+insert  into `delivery_tracking`(`id`,`deliveryid`,`deliverystatusid`,`lastupdated`,`updatedby`) values 
+(447,337,6,'2020-08-12 18:36:07',101),
+(448,337,7,'2020-08-12 18:36:46',101);
+
+/*Table structure for table `transaction` */
+
+DROP TABLE IF EXISTS `transaction`;
+
+CREATE TABLE `transaction` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `created_by` int DEFAULT NULL,
+  `updated_by` int DEFAULT NULL,
+  `created_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_active` tinyint DEFAULT NULL,
+  `amount` decimal(15,2) DEFAULT NULL,
+  `coin_amount` decimal(15,2) DEFAULT NULL,
+  `admin_allotted_id` int DEFAULT NULL,
+  `user_allotted_id` int DEFAULT NULL,
+  `money_in` tinyint(1) DEFAULT NULL,
+  `bank_type_id` int NOT NULL,
+  `reference_number` varchar(255) NOT NULL,
+  `description` text,
+  `withdrawal_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `reference_number` (`reference_number`,`admin_allotted_id`,`user_allotted_id`,`money_in`),
+  KEY `created_by` (`created_by`),
+  KEY `updated_by` (`updated_by`),
+  KEY `admin_alotted_id` (`admin_allotted_id`),
+  KEY `user_alloted_id` (`user_allotted_id`),
+  KEY `bank_type_id` (`bank_type_id`),
+  CONSTRAINT `transaction_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`),
+  CONSTRAINT `transaction_ibfk_3` FOREIGN KEY (`admin_allotted_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `transaction_ibfk_4` FOREIGN KEY (`user_allotted_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `transaction_ibfk_5` FOREIGN KEY (`bank_type_id`) REFERENCES `bank_type` (`id`),
+  CONSTRAINT `transaction_ibfk_6` FOREIGN KEY (`updated_by`) REFERENCES `user` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5692 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `transaction` */
+
+insert  into `transaction`(`id`,`created_by`,`updated_by`,`created_date`,`is_active`,`amount`,`coin_amount`,`admin_allotted_id`,`user_allotted_id`,`money_in`,`bank_type_id`,`reference_number`,`description`,`withdrawal_id`) values 
+(107,37,NULL,'2020-08-12 18:18:46',1,3000.00,3000.00,37,43,1,6,'1597220287871','for dropship',NULL),
+(108,37,NULL,'2020-08-12 18:21:00',1,400.00,400.00,37,40,1,2,'155709','for dropship',NULL);
+
+/*Table structure for table `withdrawal_status` */
+
+DROP TABLE IF EXISTS `withdrawal_status`;
+
+CREATE TABLE `withdrawal_status` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `withdrawal_status` */
+
+insert  into `withdrawal_status`(`id`,`name`) values 
+(1,'Completed'),
+(2,'Rejected'),
+(3,'Voided'),
+(4,'Pending');
+
+/*Table structure for table `withdrawal` */
+
+DROP TABLE IF EXISTS `withdrawal`;
+
+CREATE TABLE `withdrawal` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `created_by` int NOT NULL,
+  `updated_by` int DEFAULT NULL,
+  `created_date` timestamp NOT NULL,
+  `is_active` tinyint NOT NULL DEFAULT '1',
+  `void_or_reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `last_updated` timestamp NULL DEFAULT NULL,
+  `amount` decimal(65,2) NOT NULL,
+  `fee` decimal(65,2) NOT NULL,
+  `total_amount` decimal(65,2) NOT NULL,
+  `withdrawal_status_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `bank_no` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `bank_type_id` int NOT NULL,
+  `bank_account_name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `reference_number` text,
+  `contact_no` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `withdrawal_status_id` (`withdrawal_status_id`),
+  KEY `user_id` (`user_id`),
+  KEY `bank_type_id` (`bank_type_id`),
+  KEY `updated_by` (`updated_by`),
+  CONSTRAINT `withdrawal_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`),
+  CONSTRAINT `withdrawal_ibfk_3` FOREIGN KEY (`withdrawal_status_id`) REFERENCES `withdrawal_status` (`id`),
+  CONSTRAINT `withdrawal_ibfk_4` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `withdrawal_ibfk_5` FOREIGN KEY (`bank_type_id`) REFERENCES `bank_type` (`id`),
+  CONSTRAINT `withdrawal_ibfk_6` FOREIGN KEY (`updated_by`) REFERENCES `user` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1660 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `withdrawal` */
+
+insert  into `withdrawal`(`id`,`created_by`,`updated_by`,`created_date`,`is_active`,`void_or_reject_reason`,`last_updated`,`amount`,`fee`,`total_amount`,`withdrawal_status_id`,`user_id`,`bank_no`,`bank_type_id`,`bank_account_name`,`reference_number`,`contact_no`) values 
+(1,38,38,'2020-09-06 01:45:54',1,NULL,'2020-09-07 07:42:42',500.00,20.00,500.00,1,40,'003128012043',1,'dgdsagadsgsa','185773-858751',NULL),
+(2,38,38,'2020-09-06 05:11:46',1,'Test withdrawal','2020-09-06 06:10:25',610.00,20.00,610.00,3,43,'9359458565',1,'Droppy',NULL,NULL);
+
+/*Table structure for table `order` */
+
+DROP TABLE IF EXISTS `order`;
+
+CREATE TABLE `order` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `created_by` int NOT NULL,
+  `created_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_updated` timestamp NULL DEFAULT NULL,
+  `updated_by` int DEFAULT NULL,
+  `is_active` tinyint NOT NULL,
+  `order_status_id` int NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  `tracking_id` varchar(255) DEFAULT NULL,
+  `region_id` int NOT NULL,
+  `dropshipper_id` int NOT NULL,
+  `seller_id` int NOT NULL,
+  `admin_id` int NOT NULL,
+  `void_or_reject_reason` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `updated_by` (`updated_by`),
+  KEY `region_id` (`region_id`),
+  KEY `dropshipper_id` (`dropshipper_id`),
+  KEY `seller_id` (`seller_id`),
+  KEY `admin_id` (`admin_id`),
+  CONSTRAINT `order_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`),
+  CONSTRAINT `order_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `user` (`id`),
+  CONSTRAINT `order_ibfk_4` FOREIGN KEY (`region_id`) REFERENCES `region` (`id`),
+  CONSTRAINT `order_ibfk_5` FOREIGN KEY (`dropshipper_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `order_ibfk_6` FOREIGN KEY (`seller_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `order_ibfk_7` FOREIGN KEY (`admin_id`) REFERENCES `user` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2618 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `order` */
+
+insert  into `order`(`id`,`created_by`,`created_date`,`last_updated`,`updated_by`,`is_active`,`order_status_id`,`amount`,`tracking_id`,`region_id`,`dropshipper_id`,`seller_id`,`admin_id`,`void_or_reject_reason`) values 
+(371,101,'2020-08-13 17:01:57',NULL,NULL,1,5,10750.00,NULL,3,132,101,38,NULL),
+(372,101,'2020-08-13 17:03:03',NULL,NULL,1,5,10750.00,NULL,4,43,101,38,NULL);
+
+/*Table structure for table `coin_transaction` */
+
+DROP TABLE IF EXISTS `coin_transaction`;
+
+CREATE TABLE `coin_transaction` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `createdby` int DEFAULT NULL,
+  `updatedby` int DEFAULT NULL,
+  `createddate` varchar(255) DEFAULT '',
+  `isactive` tinyint DEFAULT NULL,
+  `transactionid` int DEFAULT NULL,
+  `userid` int DEFAULT NULL,
+  `type` enum('D','C') DEFAULT NULL,
+  `amount` decimal(65,2) DEFAULT NULL,
+  `cointransactionid` int DEFAULT NULL,
+  `orderid` int DEFAULT NULL,
+  `deliveryid` int DEFAULT NULL,
+  `withdrawalid` int DEFAULT NULL,
+  `lastupdated` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `createdby` (`createdby`),
+  KEY `updatedby` (`updatedby`),
+  KEY `transactionid` (`transactionid`),
+  KEY `userid` (`userid`),
+  KEY `cointransactionid` (`cointransactionid`),
+  KEY `coin_transaction_ibfk_5` (`orderid`),
+  KEY `deliveryid` (`deliveryid`),
+  KEY `withdrawalid` (`withdrawalid`),
+  CONSTRAINT `coin_transaction_ibfk_1` FOREIGN KEY (`createdby`) REFERENCES `user` (`id`),
+  CONSTRAINT `coin_transaction_ibfk_2` FOREIGN KEY (`updatedby`) REFERENCES `user` (`id`),
+  CONSTRAINT `coin_transaction_ibfk_3` FOREIGN KEY (`transactionid`) REFERENCES `transaction` (`id`),
+  CONSTRAINT `coin_transaction_ibfk_4` FOREIGN KEY (`userid`) REFERENCES `user` (`id`),
+  CONSTRAINT `coin_transaction_ibfk_5` FOREIGN KEY (`orderid`) REFERENCES `order` (`id`),
+  CONSTRAINT `coin_transaction_ibfk_6` FOREIGN KEY (`deliveryid`) REFERENCES `delivery` (`id`),
+  CONSTRAINT `coin_transaction_ibfk_7` FOREIGN KEY (`withdrawalid`) REFERENCES `withdrawal` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=72643 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `coin_transaction` */
+
+insert  into `coin_transaction`(`id`,`createdby`,`updatedby`,`createddate`,`isactive`,`transactionid`,`userid`,`type`,`amount`,`cointransactionid`,`orderid`,`deliveryid`,`withdrawalid`,`lastupdated`) values 
+(396,37,37,'2020-08-12 18:18:46',1,107,37,'D',3000.00,NULL,NULL,NULL,NULL,""),
+(397,37,37,'2020-08-12 18:18:46',1,NULL,147,'C',-3000.00,396,NULL,NULL,NULL,"");

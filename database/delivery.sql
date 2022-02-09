@@ -254,7 +254,7 @@ CREATE TABLE `product` (
 insert  into `product`(`id`,`name`,`producttypeid`,`createdby`,`createddate`,`lastupdated`,`updatedby`,`isactive`,`url`,`priceperitem`,`priceperitemdropshipper`) values 
 (15,'Max-Cee',1,26,'2020-06-08 14:48:30','2020-08-10 09:12:35',NULL,1,'/images/Max-Cee.JPG',1560.00,1092.00),
 (16,'PPAR',1,26,'2020-06-08 14:49:48','2020-08-13 06:25:47','',1,'/images/PPAR.jpeg',1600.00,1120.00),
-(17,'Maxijuice',1,26,'2020-06-08 15:19:45','2020-08-09 13:12:43',NULL,1,'/images/Maxijuice.jpeg',560.00,392.00),
+(17,'Maxijuice',1,26,'2020-06-08 15:19:45','2020-08-09 13:12:43','',1,'/images/Maxijuice.jpeg',560.00,392.00),
 (24,'Tamaraw +',1,26,'2020-07-18 23:39:02','2020-08-09 13:12:55',NULL,1,'/images/Tamaraw +.jpeg',1950.00,1365.00),
 (31,'Vert',2,26,'2020-07-25 18:05:19','2020-08-09 13:13:05',NULL,1,'/images/Vert.jpeg',250.00,175.00);
 
@@ -293,7 +293,7 @@ CREATE TABLE `inventory` (
 
 insert  into `inventory`(`id`,`productid`,`quantity`,`createdby`,`updatedby`,`createddate`,`isactive`,`regionid`,`sellerid`,`dropshipperid`) values 
 (550,16,10,101,101,'2021-07-15 10:30:12',1,3,101,132),
-(551,17,0,101,101,'2021-01-13 06:15:34',1,4,101,132),
+(551,17,8,101,101,'2021-01-13 06:15:34',1,3,101,147),
 (552,31,0,101,NULL,'2021-12-01 11:21:28',1,4,101,43);
 
 /*Table structure for table `delivery` */

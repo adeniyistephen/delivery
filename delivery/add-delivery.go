@@ -112,7 +112,7 @@ func (c Core) AddDelivery(
 
 	// Validate Product
 	str_lenght := len(deliveryDetails)
-	uniqueTmpTable, err := c.Product_Validation(deliveryDetails, str_lenght, deliveryOption, region_exists.Id, sellerId, dropshipperId) 
+	uniqueTmpTable, err := c.Product_Validation(deliveryDetails, str_lenght, deliveryOption, region_exists.Id, sellerId, dropshipperId)
 	if err != nil {
 		if errors.Is(err, database.ErrDBNotFound) {
 			log.Println(ErrNotFound)
@@ -131,7 +131,7 @@ func (c Core) AddDelivery(
 	//Insert into delivery table
 	t := time.Now()
 	for _, uTT := range uniqueTmpTable {
-		deliveryId, err := c.delivery.InsertIntoDelivery(sellerId, t.String(),true, name, address, region_exists.Id, serviceFee, basePrice, declaredAmount, devOption.Id, sellerId, dropshipperId, deliveryStatus.Id, contactNumber, note, uTT.TotalPriceDistributor)
+		deliveryId, err := c.delivery.InsertIntoDelivery(sellerId, t.String(), true, name, address, region_exists.Id, serviceFee, basePrice, declaredAmount, devOption.Id, sellerId, dropshipperId, deliveryStatus.Id, contactNumber, note, uTT.TotalPriceDistributor)
 		if err != nil {
 			log.Println("insert into delivery error: %w", err)
 		}
@@ -144,6 +144,60 @@ func (c Core) AddDelivery(
 		// Add to delivery tracking
 		if err := c.delivery.DeliveryTracking(deliveryId.Id, deliveryStatus.Id, t.String(), sellerId); err != nil {
 			log.Println("update delivery tracking error: %w", err)
+		}
+
+		coinAmount, err := c.delivery.UpdateUserTotal(sellerId, serviceFee)
+		if err != nil {
+			log.Println("update user total error: %w", err)
+		}
+		fmt.Println("Coin Amount: ", coinAmount.CoinAmount)
+
+		adminAccount, err := c.delivery.GetAdminAccount()
+		if err != nil {
+			log.Println("get admin account error: %w", err)
+		}
+		fmt.Println("Admin Account: ", adminAccount.Id)
+
+		if err := c.delivery.InsertCoinTransaction(adminAccount.Id, t.String(), true, sellerId, "D", serviceFee, deliveryId.Id); err != nil {
+			log.Println("insert coin transaction error: %w", err)
+		}
+
+		dropshipperTotalExists, err := c.delivery.DropShipperTotals(dropshipperId)
+		if err != nil {
+			log.Println("drop shipper totals error: %w", err)
+		}
+
+		if dropshipperTotalExists.Id == 0 {
+			if err := c.delivery.InsertUserTotalDropshipper(dropshipperId, adminAccount.Id, t); err != nil {
+				log.Println("insert drop shipper totals error: %w", err)
+			}
+		} else {
+			if err := c.delivery.UpdateUserTotalDropshipper(dropshipperId); err != nil {
+				log.Println("update drop shipper totals error: %w", err)
+			}
+		}
+
+		if err := c.delivery.InsertCoinTransactionDropshipper(adminAccount.Id, t.String(), true, dropshipperId, deliveryId.Id); err != nil {
+			log.Println("insert coin transaction error: %w", err)
+		}
+
+		adminTotalExists, err := c.delivery.AdminTotals(adminAccount.Id)
+		if err != nil {
+			log.Println("admin totals error: %w", err)
+		}
+
+		if adminTotalExists.Id == 0 {
+			if err := c.delivery.InsertUserTotalAdmin(adminAccount.Id, t, serviceFee); err != nil {
+				log.Println("insert admin totals error: %w", err)
+			}
+		} else {
+			if err := c.delivery.UpdateUserTotalAdmin(adminAccount.Id, serviceFee); err != nil {
+				log.Println("update admin totals error: %w", err)
+			}
+		}
+
+		if err := c.delivery.InsertCoinTransactionAdmin(adminAccount.Id, t.String(), true, serviceFee, deliveryId.Id); err != nil {
+			log.Println("insert coin transaction error: %w", err)
 		}
 	}
 }

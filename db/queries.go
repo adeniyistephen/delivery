@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/adeniyistephen/delivery/database"
 	"github.com/jmoiron/sqlx"
@@ -471,23 +472,329 @@ func (d Delivery) DeliveryTracking(deliveryId int, deliveryStatusId int, lastUpd
 	return nil
 }
 
-func (d Delivery) UpdateUserTotal(sellerId int) error {
+func (d Delivery) UpdateUserTotal(sellerId int, serviceFee float64) (UserTotal, error) {
 	data := struct {
-		SellerId int `db:"seller_id"`
+		SellerId   int     `db:"seller_id"`
+		ServiceFee float64 `db:"service_fee"`
 	}{
-		SellerId: sellerId,
+		SellerId:   sellerId,
+		ServiceFee: serviceFee,
 	}
 
 	const q = `
 	UPDATE 
 		user_total
 	SET 
-		coinamount = coinamount - :seller_id
+		coinamount = coinamount - :service_fee
 	WHERE 1 = 1
 		AND userid = :seller_id`
 
 	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return UserTotal{}, fmt.Errorf("updating user total: %w", err)
+	}
+
+	const q2 = `
+	SELECT 
+		coinamount
+	FROM
+		user_total
+	WHERE 1 = 1
+		AND userid = :seller_id`
+
+	var userTotal UserTotal
+	if err := database.NamedQueryStruct(d.db, q2, data, &userTotal); err != nil {
+		return UserTotal{}, fmt.Errorf("getting user total coin amount: %w", err)
+	}
+	return userTotal, nil
+}
+
+func (d Delivery) GetAdminAccount() (User, error) {
+	data := struct {
+		UserType string `db:"user_type"`
+	}{
+		UserType: "Admin",
+	}
+	const q = `SELECT id FROM user_type WHERE name = :user_type`
+	var userTypeId UserType
+	if err := database.NamedQueryStruct(d.db, q, data, &userTypeId); err != nil {
+		return User{}, fmt.Errorf("getting user type id: %w", err)
+	}
+
+	data2 := struct {
+		UserTypeId int `db:"ut_id"`
+	}{
+		UserTypeId: userTypeId.Id,
+	}
+
+	const q2 = `
+	SELECT
+		MAX(id) AS id
+	FROM
+		user
+	WHERE 1 = 1
+		AND is_active = 1
+		AND user_type_id = :ut_id`
+
+	var user User
+	if err := database.NamedQueryStruct(d.db, q2, data2, &user); err != nil {
+		return User{}, fmt.Errorf("getting admin account: %w", err)
+	}
+	return user, nil
+}
+
+func (d Delivery) InsertCoinTransaction(adminAccountId int, createdDate string, isActive bool, sellerId int, coinType string, serviceFee float64, deliveryIdCreated int) error {
+	data := struct {
+		AdminAccountId int     `db:"admin_account_id"`
+		CreatedDate    string  `db:"created_date"`
+		IsActive       bool    `db:"is_active"`
+		SellerId       int     `db:"seller_id"`
+		CoinType       string  `db:"coin_type"`
+		ServiceFee     float64 `db:"service_fee"`
+		DeliveryId     int     `db:"delivery_id"`
+	}{
+		AdminAccountId: adminAccountId,
+		CreatedDate:    createdDate,
+		IsActive:       isActive,
+		SellerId:       sellerId,
+		CoinType:       coinType,
+		ServiceFee:     serviceFee,
+		DeliveryId:     deliveryIdCreated,
+	}
+
+	const q = `
+	INSERT INTO coin_transaction
+		(createdby, createddate, isactive, userid, type, amount, deliveryid)
+	VALUES
+		(:admin_account_id, :created_date, :is_active, :seller_id, :coin_type, :service_fee, :delivery_id)`
+
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return fmt.Errorf("inserting coin transaction: %w", err)
+	}
+	return nil
+}
+
+func (d Delivery) DropShipperTotals(dropShipperId int) (User, error) {
+	data := struct {
+		UserType string `db:"user_type"`
+	}{
+		UserType: "Dropshipper",
+	}
+	const q = `SELECT id FROM user_type WHERE name = :user_type`
+
+	var userType UserType
+	if err := database.NamedQueryStruct(d.db, q, data, &userType); err != nil {
+		return User{}, fmt.Errorf("selecting dropshipper id %w", err)
+	}
+
+	data2 := struct {
+		DropShipperId int `db:"ds_id"`
+		UserTypeId    int `db:"ut_id"`
+	}{
+		DropShipperId: dropShipperId,
+		UserTypeId:    userType.Id,
+	}
+	const q2 = `
+	SELECT COUNT(u.id) As id
+	FROM user u
+	INNER JOIN user_total ut
+			   ON 1 = 1
+				   AND u.id = ut.userid
+	WHERE 1 = 1
+		AND u.is_active = 1
+		AND u.id = :ds_id
+		AND u.user_type_id = :ut_id`
+	var user User
+	if err := database.NamedQueryStruct(d.db, q2, data2, &user); err != nil {
+		return User{}, fmt.Errorf("selecting dropshipper user %w", err)
+	}
+	return user, nil
+}
+
+func (d Delivery) InsertUserTotalDropshipper(dropshipperId int, createdBy int, lastUpdated time.Time) error {
+	data := struct {
+		DropShipperId int       `db:"ds_id"`
+		Amount        float64   `db:"amount"`
+		CoinAmount    float64   `db:"coinamount"`
+		CreatedBy     int       `db:"createdby"`
+		LastUpdated   time.Time `db:"lastupdated"`
+	}{
+		DropShipperId: dropshipperId,
+		Amount:        0,
+		CoinAmount:    35,
+		CreatedBy:     createdBy,
+		LastUpdated:   lastUpdated,
+	}
+	const q = `
+	INSERT INTO user_total
+		(userid, amount, coinamount, createdby, lastupdated)
+	VALUES
+		(:ds_id, :amount, :coinamount, :createdby, :lastupdated)`
+
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return fmt.Errorf("inserting user total: %w", err)
+	}
+	return nil
+}
+
+func (d Delivery) UpdateUserTotalDropshipper(dropshipperId int) error {
+	data := struct {
+		DropShipperId int `db:"ds_id"`
+	}{
+		DropShipperId: dropshipperId,
+	}
+	const q = `
+	UPDATE user_total
+	SET
+		coinamount = coinamount + 35,
+		lastupdated = NOW()
+	WHERE 1 = 1
+		AND userid = :ds_id`
+
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
 		return fmt.Errorf("updating user total: %w", err)
+	}
+	return nil
+}
+
+func (d Delivery) InsertCoinTransactionDropshipper(adminAccount int, createddate string, isActive bool, dropshipperId int, deliveryId int) error {
+	data := struct {
+		AdminAccountId int     `db:"admin_account_id"`
+		CreatedDate    string  `db:"created_date"`
+		IsActive       bool    `db:"is_active"`
+		DropShipperId  int     `db:"ds_id"`
+		Type           string  `db:"type"`
+		Amount         float64 `db:"amount"`
+		DeliveryId     int     `db:"delivery_id"`
+	}{
+		AdminAccountId: adminAccount,
+		CreatedDate:    createddate,
+		IsActive:       isActive,
+		DropShipperId:  dropshipperId,
+		Type:           "C",
+		Amount:         -35,
+		DeliveryId:     deliveryId,
+	}
+	const q = `
+	INSERT INTO coin_transaction
+		(createdby, createddate, isactive, userid, type, amount, deliveryid)
+	VALUES
+		(:admin_account_id, :created_date, :is_active, :ds_id, :type, :amount, :delivery_id)`
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return fmt.Errorf("inserting coin trasaction dropshipper: %w", err)
+	}
+	return nil
+}
+
+func (d Delivery) AdminTotals(adminAccount int) (User, error) {
+	data := struct {
+		UserType string `db:"user_type"`
+	}{
+		UserType: "Admin",
+	}
+	const q = `SELECT id FROM user_type WHERE name = :user_type`
+
+	var userType UserType
+	if err := database.NamedQueryStruct(d.db, q, data, &userType); err != nil {
+		return User{}, fmt.Errorf("selecting admin id %w", err)
+	}
+
+	data2 := struct {
+		AdminId    int `db:"admn_id"`
+		UserTypeId int `db:"ut_id"`
+	}{
+		AdminId:    adminAccount,
+		UserTypeId: userType.Id,
+	}
+	const q2 = `
+	SELECT COUNT(u.id) As id
+	FROM user u
+	INNER JOIN user_total ut
+			   ON 1 = 1
+				   AND u.id = ut.userid
+	WHERE 1 = 1
+		AND u.is_active = 1
+		AND u.id = :admn_id
+		AND u.user_type_id = :ut_id`
+	var user User
+	if err := database.NamedQueryStruct(d.db, q2, data2, &user); err != nil {
+		return User{}, fmt.Errorf("selecting Admin user %w", err)
+	}
+	return user, nil
+}
+
+func (d Delivery) InsertUserTotalAdmin(adminAccountId int, lastUpdated time.Time, serviceFee float64) error {
+	data := struct {
+		AdminAccountId int     `db:"adm_id"`
+		Amount         float64 `db:"amount"`
+		CoinAmount     float64 `db:"coinamount"`
+		CreatedBy      int     `db:"createdby"`
+		LastUpdated    time.Time  `db:"lastupdated"`
+	}{
+		AdminAccountId: adminAccountId,
+		Amount:         0,
+		CoinAmount:     serviceFee - 35,
+		CreatedBy:      adminAccountId,
+		LastUpdated:    lastUpdated,
+	}
+	const q = `
+	INSERT INTO user_total
+		(userid, amount, coinamount, createdby, lastupdated)
+	VALUES
+		(:adm_id, :amount, :coinamount, :createdby, :lastupdated)`
+
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return fmt.Errorf("inserting user total admin: %w", err)
+	}
+	return nil
+}
+
+func (d Delivery) UpdateUserTotalAdmin(adminAccount int, serviceFee float64) error {
+	data := struct {
+		AdminId    int     `db:"adm_id"`
+		ServiceFee float64 `db:"service_fee"`
+	}{
+		AdminId:    adminAccount,
+		ServiceFee: serviceFee,
+	}
+	const q = `
+	UPDATE user_total
+	SET
+		coinamount = coinamount + (:service_fee - 35),
+		lastupdated = NOW()
+	WHERE 1 = 1
+		AND userid = :adm_id`
+
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return fmt.Errorf("updating user total admin: %w", err)
+	}
+	return nil
+}
+
+func (d Delivery) InsertCoinTransactionAdmin(adminAccount int, createddate string, isActive bool, serviceFee float64, deliveryId int) error {
+	data := struct {
+		CreatedBy   int     `db:"admin_account_id"`
+		CreatedDate string  `db:"created_date"`
+		IsActive    bool    `db:"is_active"`
+		UserId      int     `db:"user_id"`
+		Type        string  `db:"type"`
+		Amount      float64 `db:"amount"`
+		DeliveryId  int     `db:"delivery_id"`
+	}{
+		CreatedBy:   adminAccount,
+		CreatedDate: createddate,
+		IsActive:    isActive,
+		UserId:      adminAccount,
+		Type:        "D",
+		Amount:      serviceFee - 35,
+		DeliveryId:  deliveryId,
+	}
+	const q = `
+	INSERT INTO coin_transaction
+		(createdby, createddate, isactive, userid, type, amount, deliveryid)
+	VALUES
+		(:admin_account_id, :created_date, :is_active, :user_id, :type, :amount, :delivery_id)`
+	if err := database.NamedExecContext(d.db, q, data); err != nil {
+		return fmt.Errorf("inserting coin trasaction admin: %w", err)
 	}
 	return nil
 }
